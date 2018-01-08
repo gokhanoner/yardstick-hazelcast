@@ -18,7 +18,7 @@
     Hazelcast client configuration file to startup hazelcast instance.
 -->
 <hazelcast-client xsi:schemaLocation="http://www.hazelcast.com/schema/client-config
-                  http://www.hazelcast.com/schema/client-config/hazelcast-client-config-3.5.xsd"
+                  http://www.hazelcast.com/schema/client-config/hazelcast-client-config-3.9.xsd"
                   xmlns="http://www.hazelcast.com/schema/client-config"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <network>
@@ -28,4 +28,14 @@
         <connection-attempt-limit>50</connection-attempt-limit>
         <connection-timeout>10000</connection-timeout>
     </network>
+
+    <serialization>
+        <data-serializable-factories>
+            <data-serializable-factory factory-id="1">org.yardstickframework.hazelcast.SampleValueSerializableFactory</data-serializable-factory>
+        </data-serializable-factories>
+        <portable-factories>
+            <portable-factory factory-id="2">org.yardstickframework.hazelcast.PersonSerializableFactory</portable-factory>
+        </portable-factories>
+    </serialization>
+
 </hazelcast-client>
