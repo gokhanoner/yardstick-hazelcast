@@ -14,11 +14,16 @@
 
 package org.yardstickframework.hazelcast;
 
+import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.client.*;
+import com.hazelcast.client.cache.impl.HazelcastClientCachingProvider;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.core.*;
+import com.hazelcast.instance.HazelcastInstanceProxy;
 import org.yardstickframework.*;
 
+import javax.cache.CacheManager;
+import javax.cache.spi.CachingProvider;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -28,16 +33,24 @@ import static org.yardstickframework.BenchmarkUtils.*;
  * Abstract class for Hazelcast benchmarks.
  */
 public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter {
-    /** Cache name. */
+    /**
+     * Cache name.
+     */
     protected final String cacheName;
 
-    /** Arguments. */
+    /**
+     * Arguments.
+     */
     protected final HazelcastBenchmarkArguments args = new HazelcastBenchmarkArguments();
 
-    /** Node. */
+    /**
+     * Node.
+     */
     private HazelcastNode node;
 
-    /** Map. */
+    /**
+     * Map.
+     */
     protected IMap<Object, Object> map;
 
     /**
@@ -47,8 +60,11 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
         this.cacheName = cacheName;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
         jcommander(cfg.commandLineArguments(), args, "<hazelcast-driver>");
@@ -61,8 +77,7 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
             node = new HazelcastNode(args.nodeType());
 
             node.start(cfg);
-        }
-        else
+        } else
             node = new HazelcastNode(args.nodeType(), instance);
 
         waitForNodes();
@@ -78,29 +93,38 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
      */
     private static HazelcastInstance startedInstance(NodeType nodeType) {
         Collection<HazelcastInstance> col = nodeType == NodeType.CLIENT ? HazelcastClient.getAllHazelcastClients() :
-            Hazelcast.getAllHazelcastInstances();
+                Hazelcast.getAllHazelcastInstances();
 
         return col == null || col.isEmpty() ? null : col.iterator().next();
     }
 
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void tearDown() throws Exception {
         map.clear();
 
         if (node != null)
             node.stop();
     }
 
-    /** {@inheritDoc} */
-    @Override public String description() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String description() {
         String desc = BenchmarkUtils.description(cfg, this);
 
         return desc.isEmpty() ?
-            getClass().getSimpleName() + args.description() + cfg.defaultDescription() : desc;
+                getClass().getSimpleName() + args.description() + cfg.defaultDescription() : desc;
     }
 
-    /** {@inheritDoc} */
-    @Override public String usage() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String usage() {
         return BenchmarkUtils.usage(args);
     }
 
@@ -118,16 +142,19 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
         final CountDownLatch nodesStartedLatch = new CountDownLatch(1);
 
         hazelcast().getCluster().addMembershipListener(new MembershipListener() {
-            @Override public void memberAdded(MembershipEvent evt) {
+            @Override
+            public void memberAdded(MembershipEvent evt) {
                 if (nodesStarted())
                     nodesStartedLatch.countDown();
             }
 
-            @Override public void memberRemoved(MembershipEvent evt) {
+            @Override
+            public void memberRemoved(MembershipEvent evt) {
                 // No-op.
             }
 
-            @Override public void memberAttributeChanged(MemberAttributeEvent memberAttributeEvent) {
+            @Override
+            public void memberAttributeChanged(MemberAttributeEvent memberAttributeEvent) {
                 // No-op.
             }
         });
@@ -175,5 +202,23 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
      */
     protected int nextRandom(int min, int max) {
         return ThreadLocalRandom.current().nextInt(max - min) + min;
+    }
+
+    public static boolean isMember(HazelcastInstance instance) {
+        return instance instanceof HazelcastInstanceProxy;
+    }
+
+    public static boolean isClient(HazelcastInstance instance) {
+        return !isMember(instance);
+    }
+
+    public static CacheManager getCacheManager(HazelcastInstance instance) {
+        CachingProvider provider;
+        if (isMember(instance)) {
+            provider = HazelcastServerCachingProvider.createCachingProvider(instance);
+        } else {
+            provider = HazelcastClientCachingProvider.createCachingProvider(instance);
+        }
+        return provider.getCacheManager(provider.getDefaultURI(), provider.getDefaultClassLoader(), null);
     }
 }
