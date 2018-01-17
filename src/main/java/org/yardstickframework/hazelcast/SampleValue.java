@@ -63,7 +63,7 @@ public class SampleValue implements IdentifiedDataSerializable {
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeInt(id);
-        out.write(value);
+        out.writeByteArray(value);
     }
 
     @Override

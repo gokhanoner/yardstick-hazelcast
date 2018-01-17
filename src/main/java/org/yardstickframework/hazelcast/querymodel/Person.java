@@ -14,17 +14,17 @@
 
 package org.yardstickframework.hazelcast.querymodel;
 
-import com.hazelcast.nio.serialization.Portable;
-import com.hazelcast.nio.serialization.PortableReader;
-import com.hazelcast.nio.serialization.PortableWriter;
-import org.yardstickframework.hazelcast.PersonSerializableFactory;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.*;
+
 
 import java.io.*;
 
 /**
  * Person record used for query test.
  */
-public class Person implements Portable {
+public class Person implements DataSerializable {
     /** Person ID. */
     private int id;
 
@@ -147,34 +147,6 @@ public class Person implements Portable {
     }
 
 
-    @Override
-    public int getFactoryId() {
-        return PersonSerializableFactory.FACTORY_ID;
-    }
-
-    @Override
-    public int getClassId() {
-        return PersonSerializableFactory.PERSON_ID;
-    }
-
-    @Override
-    public void writePortable(PortableWriter writer) throws IOException {
-        writer.writeInt("id", id);
-        writer.writeInt("orgId", orgId);
-        writer.writeUTF("firstName", firstName);
-        writer.writeUTF("lastName", lastName);
-        writer.writeDouble("salary", salary);
-    }
-
-    @Override
-    public void readPortable(PortableReader reader) throws IOException {
-        id = reader.readInt("id");
-        orgId = reader.readInt("orgId");
-        firstName = reader.readUTF("firstName");
-        lastName = reader.readUTF("lastName");
-        salary = reader.readDouble("salary");
-    }
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this == o || (o instanceof Person) && id == ((Person)o).id;
@@ -193,6 +165,24 @@ public class Person implements Portable {
             ", lastName=" + lastName +
             ", salary=" + salary +
             ']';
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeInt(id);
+        out.writeInt(orgId);
+        out.writeUTF(firstName);
+        out.writeUTF(lastName);
+        out.writeDouble(salary);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        id = in.readInt();
+        orgId = in.readInt();
+        firstName = in.readUTF();
+        lastName = in.readUTF();
+        salary = in.readDouble();
     }
 
 }
